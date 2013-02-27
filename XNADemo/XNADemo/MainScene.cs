@@ -8,18 +8,27 @@ using Microsoft.Xna.Framework.GamerServices;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
+using System.IO;
 
 namespace XNADemo
 {
     /// <summary>
     /// This is the main type for your game
     /// </summary>
-    public class Game1 : Microsoft.Xna.Framework.Game
+    public class MainScene : Microsoft.Xna.Framework.Game
     {
+        // XNA objects
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
-        public Game1()
+        // Conent constants
+        const string meshFolderName = "Mesh";
+        const string diegoModelFileName = "diegoFixed.FBX";
+
+        // Models
+        Model diegoModel;
+
+        public MainScene()
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -48,6 +57,7 @@ namespace XNADemo
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
+            diegoModel = this.Content.Load<Model>(Path.Combine(meshFolderName, diegoModelFileName));
         }
 
         /// <summary>
@@ -83,7 +93,15 @@ namespace XNADemo
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
+            Matrix world, view, projection;
+            Matrix[] transforms = new Matrix[diegoModel.Bones.Count];
+            diegoModel.CopyAbsoluteBoneTransformsTo(transforms);
+
             // TODO: Add your drawing code here
+            foreach (ModelMesh modelMesh in diegoModel.Meshes)
+            {
+                modelMesh.Draw();
+            }
 
             base.Draw(gameTime);
         }
