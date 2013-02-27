@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using System.IO;
+using SkinnedModel;
 
 namespace XNADemo
 {
@@ -20,6 +21,9 @@ namespace XNADemo
         // XNA objects
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        
+        // SkinnedModel objects
+        AnimationPlayer animationPlayer;
 
         // Conent constants
         const string meshFolderName = "Mesh";
@@ -92,14 +96,28 @@ namespace XNADemo
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
+            Viewport viewPort = GraphicsDevice.Viewport;
+            float aspectRatio = (float)viewPort.Width / viewPort.Height;
 
             Matrix world, view, projection;
+
             Matrix[] transforms = new Matrix[diegoModel.Bones.Count];
+            world = transforms[diegoModel.Meshes[0].ParentBone.Index];
+            view = Matrix.CreateLookAt(new Vector3(0, 0, 500), 
+                    Vector3.Zero, Vector3.Up) * Matrix.CreateTranslation(new Vector3(0, -100, 0));
+            projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, 1, 10000);
+
             diegoModel.CopyAbsoluteBoneTransformsTo(transforms);
 
             // TODO: Add your drawing code here
             foreach (ModelMesh modelMesh in diegoModel.Meshes)
             {
+                foreach (BasicEffect effect in modelMesh.Effects)
+                {
+                    effect.World = world;
+                    effect.View = view;
+                    effect.Projection = projection;
+                }
                 modelMesh.Draw();
             }
 
