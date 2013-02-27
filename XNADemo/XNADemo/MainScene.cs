@@ -20,22 +20,29 @@ namespace XNADemo
     {
         // XNA objects
         GraphicsDeviceManager graphics;
-        SpriteBatch spriteBatch;
         
         // SkinnedModel objects
         AnimationPlayer animationPlayer;
+        SkinningData skinningData;
+        Matrix[] bonesTransforms;
 
         // Conent constants
+        const string contentFolderName = "Content";
         const string meshFolderName = "Mesh";
-        const string diegoModelFileName = "diegoFixed.FBX";
+        const string mainModelName = "dude";
+
+        // View variables
+        float cameraArc = 0;
+        float cameraRotation = 0;
+        float cameraDistance = 100;
 
         // Models
-        Model diegoModel;
+        Model mainModel;
 
         public MainScene()
         {
             graphics = new GraphicsDeviceManager(this);
-            Content.RootDirectory = "Content";
+            Content.RootDirectory = contentFolderName;
         }
 
         /// <summary>
@@ -57,11 +64,49 @@ namespace XNADemo
         /// </summary>
         protected override void LoadContent()
         {
-            // Create a new SpriteBatch, which can be used to draw textures.
-            spriteBatch = new SpriteBatch(GraphicsDevice);
-
             // TODO: use this.Content to load your game content here
-            diegoModel = this.Content.Load<Model>(Path.Combine(meshFolderName, diegoModelFileName));
+
+            LoadMainModel();
+            InitializeMainModelSkinningData();
+            InitializeMainModelBonesTransforms();
+
+            InitializeAnimationPlayer();
+            
+        }
+
+        private void LoadMainModel()
+        {
+            string mainModelPath = Path.Combine(meshFolderName, mainModelName);
+            mainModel = this.Content.Load<Model>(mainModelPath);
+
+            if (mainModel == null)
+            {
+                throw new IOException(
+                    string.Format("Can't find a model by a specified path", mainModelPath)
+                );
+            }
+        }
+
+        private void InitializeMainModelSkinningData()
+        {
+            skinningData = mainModel.Tag as SkinningData;
+            if (skinningData == null)
+            {
+                throw new InvalidOperationException("This model does not contain SkinningData tag.");
+            }
+        }
+
+        private void InitializeMainModelBonesTransforms()
+        {
+            bonesTransforms = new Matrix[skinningData.BindPose.Count];
+        }
+
+        private void InitializeAnimationPlayer()
+        {
+            animationPlayer = new AnimationPlayer(skinningData);
+
+            AnimationClip clip = skinningData.AnimationClips["Take 001"];
+            animationPlayer.StartClip(clip);
         }
 
         /// <summary>
@@ -84,6 +129,11 @@ namespace XNADemo
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
+            animationPlayer.UpdateBoneTransforms(gameTime.ElapsedGameTime, true);
+
+            animationPlayer.GetBoneTransforms().CopyTo(bonesTransforms, 0);
+            animationPlayer.UpdateWorldTransforms(Matrix.Identity, bonesTransforms);
+            animationPlayer.UpdateSkinTransforms();
             // TODO: Add your update logic here
 
             base.Update(gameTime);
@@ -96,27 +146,32 @@ namespace XNADemo
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            Viewport viewPort = GraphicsDevice.Viewport;
-            float aspectRatio = (float)viewPort.Width / viewPort.Height;
 
-            Matrix world, view, projection;
+            Matrix[] bones = animationPlayer.GetSkinTransforms();
 
-            Matrix[] transforms = new Matrix[diegoModel.Bones.Count];
-            world = transforms[diegoModel.Meshes[0].ParentBone.Index];
-            view = Matrix.CreateLookAt(new Vector3(0, 0, 500), 
-                    Vector3.Zero, Vector3.Up) * Matrix.CreateTranslation(new Vector3(0, -100, 0));
-            projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, 1, 10000);
+            Matrix view = Matrix.CreateTranslation(0, -40, 0) *
+                   Matrix.CreateRotationY(MathHelper.ToRadians(cameraRotation)) *
+                   Matrix.CreateRotationX(MathHelper.ToRadians(cameraArc)) * Matrix.CreateLookAt(new Vector3(0, 0, -cameraDistance),
+                   new Vector3(0, 0, 0), Vector3.Up);
 
-            diegoModel.CopyAbsoluteBoneTransformsTo(transforms);
+            Matrix projection = Matrix.CreatePerspectiveFieldOfView(
+                MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 10000);
+            
 
             // TODO: Add your drawing code here
-            foreach (ModelMesh modelMesh in diegoModel.Meshes)
+            foreach (ModelMesh modelMesh in mainModel.Meshes)
             {
-                foreach (BasicEffect effect in modelMesh.Effects)
+                foreach (SkinnedEffect effect in modelMesh.Effects)
                 {
-                    effect.World = world;
+                    effect.SetBoneTransforms(bones);
+
                     effect.View = view;
                     effect.Projection = projection;
+
+                    effect.EnableDefaultLighting();
+                    effect.SpecularColor = new Vector3(0.25f);
+
+                    effect.SpecularPower = 16;
                 }
                 modelMesh.Draw();
             }
