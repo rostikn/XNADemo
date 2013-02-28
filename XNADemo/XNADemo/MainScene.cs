@@ -26,8 +26,6 @@ namespace XNADemo
 
         // SkinnedModel objects
         AnimationPlayer animationPlayer;
-        SkinningData skinningData;
-        Matrix[] bonesTransforms;
 
         // Input objects
         KeyboardState currentKeyboardState = new KeyboardState();
@@ -41,8 +39,8 @@ namespace XNADemo
 
         // Camera constants
         const float defaultCameraArc = 0;
-        const float defaultCameraRotation = 0;
-        const float defaultCameraDistance = 100;
+        const float defaultCameraRotation = -45;
+        const float defaultCameraDistance = 300;
 
         // Camera variables
         float cameraArc = defaultCameraArc;
@@ -62,6 +60,13 @@ namespace XNADemo
         // Models
         const string mainModelName = "dude";
         Model mainModel;
+        SkinningData mainModelSkinningData;
+        Matrix[] mainModelBonesTransforms;
+
+        const string landscapeModelName = "Level0";
+        Model landscapeModel;
+        SkinningData landscapeModelSkinningData;
+        Matrix[] landscapeModelBonesTransforms;
 
         public MainScene()
         {
@@ -92,12 +97,20 @@ namespace XNADemo
             // TODO: use this.Content to load your game content here
             LoadMainTheme();
 
+            InitializeModels();
+
+            InitializeAnimationPlayer();
+            InitializeMediaPlayer();
+        }
+
+        private void InitializeModels()
+        {
             LoadMainModel();
             InitializeMainModelSkinningData();
             InitializeMainModelBonesTransforms();
 
-            InitializeAnimationPlayer();
-            InitializeMediaPlayer();
+            LoadLandscapeModel();
+            //InitializeLandscapeModelSkinningData();
         }
 
         private void LoadMainTheme()
@@ -106,6 +119,7 @@ namespace XNADemo
             mainTheme = Content.Load<Song>(mainThemePath);
         }
 
+        const string cantFindModelExceptionMessageTemplate = "Can't find a model by a specified path: {0}";
         private void LoadMainModel()
         {
             string mainModelPath = Path.Combine(meshFolderName, mainModelName);
@@ -114,30 +128,56 @@ namespace XNADemo
             if (mainModel == null)
             {
                 throw new IOException(
-                    string.Format("Can't find a model by a specified path", mainModelPath)
-                );
+                    string.Format(cantFindModelExceptionMessageTemplate, mainModelPath)
+                    );
             }
         }
 
+        const string invalidSkinningDataExceptionMessageTemplate = "This model does not contain SkinningData tag";
         private void InitializeMainModelSkinningData()
         {
-            skinningData = mainModel.Tag as SkinningData;
-            if (skinningData == null)
+            mainModelSkinningData = mainModel.Tag as SkinningData;
+            if (mainModelSkinningData == null)
             {
-                throw new InvalidOperationException("This model does not contain SkinningData tag.");
+                throw new InvalidOperationException(invalidSkinningDataExceptionMessageTemplate);
             }
         }
 
         private void InitializeMainModelBonesTransforms()
         {
-            bonesTransforms = new Matrix[skinningData.BindPose.Count];
+            mainModelBonesTransforms = new Matrix[mainModelSkinningData.BindPose.Count];
+        }
+
+        private void LoadLandscapeModel()
+        {
+            string landscapeModelPath = Path.Combine(meshFolderName, landscapeModelName);
+            landscapeModel = this.Content.Load<Model>(landscapeModelPath);
+            if (landscapeModel == null)
+            {
+                throw new IOException(
+                    string.Format(cantFindModelExceptionMessageTemplate, landscapeModelPath)
+                    );
+            }
+        }
+
+        private void InitializeLandscapeModelSkinningData()
+        {
+            landscapeModelSkinningData = landscapeModel.Tag as SkinningData;
+            if (landscapeModelSkinningData == null)
+            {
+                throw new InvalidOperationException(invalidSkinningDataExceptionMessageTemplate);
+            }
+        }
+
+        private void InitializeLandscapeModelBonesTransfotms()
+        {
+            landscapeModelBonesTransforms = new Matrix[landscapeModelSkinningData.BindPose.Count];
         }
 
         private void InitializeAnimationPlayer()
         {
-            animationPlayer = new AnimationPlayer(skinningData);
-
-            AnimationClip clip = skinningData.AnimationClips["Take 001"];
+            animationPlayer = new AnimationPlayer(mainModelSkinningData);
+            AnimationClip clip = mainModelSkinningData.AnimationClips["Take 001"];
             animationPlayer.StartClip(clip);
         }
 
@@ -242,7 +282,7 @@ namespace XNADemo
 
         private void HandleCameraArcLimits()
         {
-            const float cameraArcMaxLimit = 90.0f;
+            const float cameraArcMaxLimit = 0f;
             const float cameraArcMinLimit = -90.0f;
 
             if (cameraArc > cameraArcMaxLimit)
@@ -442,8 +482,8 @@ namespace XNADemo
         {
             animationPlayer.UpdateBoneTransforms(gameTime.ElapsedGameTime, true);
 
-            animationPlayer.GetBoneTransforms().CopyTo(bonesTransforms, 0);
-            animationPlayer.UpdateWorldTransforms(Matrix.Identity, bonesTransforms);
+            animationPlayer.GetBoneTransforms().CopyTo(mainModelBonesTransforms, 0);
+            animationPlayer.UpdateWorldTransforms(Matrix.Identity, mainModelBonesTransforms);
             animationPlayer.UpdateSkinTransforms();
         }
 
@@ -461,6 +501,9 @@ namespace XNADemo
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             Matrix[] bones = animationPlayer.GetSkinTransforms();
+
+            Matrix[] worldTransforms = animationPlayer.GetWorldTransforms();
+            Matrix world = Matrix.CreateTranslation(0f, 200f, -40f) * worldTransforms.First();
 
             Matrix view = Matrix.CreateTranslation(0, -40, 0) *
                    Matrix.CreateRotationY(MathHelper.ToRadians(cameraRotation)) *
@@ -485,6 +528,20 @@ namespace XNADemo
                     effect.EnableDefaultLighting();
                     effect.SpecularColor = new Vector3(0.25f);
 
+                    effect.SpecularPower = 16;
+                }
+                modelMesh.Draw();
+            }
+
+            foreach (ModelMesh modelMesh in landscapeModel.Meshes)
+            {
+                foreach (BasicEffect effect in modelMesh.Effects)
+                {
+                    effect.View = view;
+                    effect.Projection = projection;
+                    effect.World = world;
+                    effect.EnableDefaultLighting();
+                    effect.SpecularColor = new Vector3(0.25f);
                     effect.SpecularPower = 16;
                 }
                 modelMesh.Draw();
