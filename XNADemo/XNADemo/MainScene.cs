@@ -68,6 +68,13 @@ namespace XNADemo
         SkinningData landscapeModelSkinningData;
         Matrix[] landscapeModelBonesTransforms;
 
+        // Models positions
+        const int defaultMainModelAngle = 0;
+        const int defaultMainModelPositionX = 0;
+        const int defaultMainModelPositionY = 0;
+        Point mainModelPosition = new Point(defaultMainModelPositionX, defaultMainModelPositionY);
+        int mainModelAngle = defaultMainModelAngle;
+
         public MainScene()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -198,6 +205,7 @@ namespace XNADemo
             // TODO: Unload any non ContentManager content here
         }
 
+        bool isFirstUpdateTRansformsCompleted = false;
         /// <summary>
         /// Allows the game to run logic such as updating the world,
         /// checking for collisions, gathering input, and playing audio.
@@ -205,8 +213,12 @@ namespace XNADemo
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            if (!isFirstUpdateTRansformsCompleted)
+            {
+                UpdateTransforms(gameTime);
+                isFirstUpdateTRansformsCompleted = true;
+            }
             HandleInput(gameTime);
-            UpdateTransforms(gameTime);
             UpdateMediaPlayer();
             
             base.Update(gameTime);
@@ -218,6 +230,8 @@ namespace XNADemo
             ProcessKeyboardStates();
 
             HandleExit();
+
+            HandleMainModelPosition(gameTime);
 
             HandleCameraArc(gameTime);
             HandleCameraRotation(gameTime);
@@ -246,6 +260,54 @@ namespace XNADemo
         }
         #endregion
 
+        private void HandleMainModelPosition(GameTime gameTime)
+        {
+            HandleMainModelGoForward(gameTime);
+            //HandleMainModelGoBack(gameTime);
+            HandleMainModelRotateLeft(gameTime);
+            HandleMainModelRotateRight(gameTime);
+        }
+
+        private void HandleMainModelGoForward(GameTime gameTime)
+        {
+            if(currentKeyboardState.IsKeyDown(Keys.W))
+            {
+                float mainModelPositionAngleAsFloat = mainModelAngle;
+                mainModelPosition.Y += (int)(Math.Sin(MathHelper.ToRadians(mainModelPositionAngleAsFloat + 90)) * 10) / 5;
+                mainModelPosition.X += (int)(Math.Cos(MathHelper.ToRadians(mainModelPositionAngleAsFloat + 90)) * 10) / 5;
+                UpdateTransforms(gameTime);
+            }
+        }
+
+        private void HandleMainModelGoBack(GameTime gameTime)
+        {
+            if (currentKeyboardState.IsKeyDown(Keys.S))
+            {
+                mainModelPosition.Y--;
+                UpdateTransforms(gameTime);
+            }
+        }
+
+        private void HandleMainModelRotateLeft(GameTime gameTime)
+        {
+            if (currentKeyboardState.IsKeyDown(Keys.A))
+            {
+                mainModelAngle++;
+                UpdateTransforms(gameTime);
+            }
+        }
+
+        private void HandleMainModelRotateRight(GameTime gameTime)
+        {
+            if(currentKeyboardState.IsKeyDown(Keys.D))
+            {
+                mainModelAngle--;
+                UpdateTransforms(gameTime);
+            }
+
+
+        }
+
         #region Handle Camera Up/Down
         private void HandleCameraArc(GameTime gameTime)
         {
@@ -260,8 +322,7 @@ namespace XNADemo
 
             float time = (float)gameTime.ElapsedGameTime.Milliseconds;
 
-            if (currentKeyboardState.IsKeyDown(Keys.Up) ||
-                currentKeyboardState.IsKeyDown(Keys.W))
+            if (currentKeyboardState.IsKeyDown(Keys.Up))
             {
                 cameraArc += time * deltaCameraArc;
             }
@@ -273,8 +334,7 @@ namespace XNADemo
 
             float time = (float)gameTime.ElapsedGameTime.Milliseconds;
 
-            if (currentKeyboardState.IsKeyDown(Keys.Down) ||
-                currentKeyboardState.IsKeyDown(Keys.W))
+            if (currentKeyboardState.IsKeyDown(Keys.Down))
             {
                 cameraArc -= time * deltaCameraArc;
             }
@@ -305,8 +365,7 @@ namespace XNADemo
 
             float time = gameTime.ElapsedGameTime.Milliseconds;
 
-            if (currentKeyboardState.IsKeyDown(Keys.Left) ||
-               currentKeyboardState.IsKeyDown(Keys.A))
+            if (currentKeyboardState.IsKeyDown(Keys.Left))
             {
                 cameraRotation -= time * deltaCameraRotation;
             }
@@ -318,8 +377,7 @@ namespace XNADemo
 
             float time = gameTime.ElapsedGameTime.Milliseconds;
 
-            if (currentKeyboardState.IsKeyDown(Keys.Right) ||
-                currentKeyboardState.IsKeyDown(Keys.D))
+            if (currentKeyboardState.IsKeyDown(Keys.Right))
             {
                 cameraRotation += time * deltaCameraRotation;
             }
@@ -483,7 +541,8 @@ namespace XNADemo
             animationPlayer.UpdateBoneTransforms(gameTime.ElapsedGameTime, true);
 
             animationPlayer.GetBoneTransforms().CopyTo(mainModelBonesTransforms, 0);
-            animationPlayer.UpdateWorldTransforms(Matrix.Identity, mainModelBonesTransforms);
+            Matrix rotationX = Matrix.CreateRotationY(mainModelAngle * MathHelper.Pi / 180);
+            animationPlayer.UpdateWorldTransforms(rotationX, mainModelBonesTransforms);
             animationPlayer.UpdateSkinTransforms();
         }
 
@@ -499,39 +558,43 @@ namespace XNADemo
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            Matrix[] bones = animationPlayer.GetSkinTransforms();
-
-            Matrix[] worldTransforms = animationPlayer.GetWorldTransforms();
-            Matrix world = Matrix.CreateTranslation(0f, 200f, -40f) * worldTransforms.First();
-
-            Matrix view = Matrix.CreateTranslation(0, -40, 0) *
-                   Matrix.CreateRotationY(MathHelper.ToRadians(cameraRotation)) *
-                   Matrix.CreateRotationX(MathHelper.ToRadians(cameraArc)) * 
-                   Matrix.CreateLookAt(new Vector3(0, 0, -cameraDistance),
-                    new Vector3(0, 0, 0), Vector3.Up);
-
-            Matrix projection = Matrix.CreatePerspectiveFieldOfView(
-                MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 10000);
-            
+            Matrix mainModelTranslation = MainModelTranslation();
+            Matrix view = CreateView();
+            Matrix projection = CreateProjection();
 
             // TODO: Add your drawing code here
-            foreach (ModelMesh modelMesh in mainModel.Meshes)
-            {
-                foreach (SkinnedEffect effect in modelMesh.Effects)
-                {
-                    effect.SetBoneTransforms(bones);
+            DrawLandscape(view, projection);
 
-                    effect.View = view;
-                    effect.Projection = projection;
+            DrawMainModel(mainModelTranslation, view, projection);
 
-                    effect.EnableDefaultLighting();
-                    effect.SpecularColor = new Vector3(0.25f);
+            base.Draw(gameTime);
+        }
 
-                    effect.SpecularPower = 16;
-                }
-                modelMesh.Draw();
-            }
+        private Matrix MainModelTranslation()
+        {
+            const float mainModelOffsetZ = 3f;
+            return Matrix.CreateTranslation(mainModelPosition.X, mainModelOffsetZ, -mainModelPosition.Y);
+        }
+
+        private Matrix CreateView()
+        {
+            return Matrix.CreateTranslation(0, -40, 0) *
+                   Matrix.CreateRotationY(MathHelper.ToRadians(cameraRotation)) *
+                   Matrix.CreateRotationX(MathHelper.ToRadians(cameraArc)) *
+                   Matrix.CreateLookAt(new Vector3(0, 0, -cameraDistance),
+                    new Vector3(0, 0, 0), Vector3.Up);
+        }
+
+        private Matrix CreateProjection()
+        {
+            return Matrix.CreatePerspectiveFieldOfView(
+                MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 10000);
+        }
+
+        private void DrawLandscape(Matrix view, Matrix projection)
+        {
+            Matrix[] landscapeTranforms = new Matrix[landscapeModel.Bones.Count];
+            landscapeModel.CopyAbsoluteBoneTransformsTo(landscapeTranforms);
 
             foreach (ModelMesh modelMesh in landscapeModel.Meshes)
             {
@@ -539,16 +602,37 @@ namespace XNADemo
                 {
                     effect.View = view;
                     effect.Projection = projection;
-                    effect.World = world;
+                    effect.World = landscapeTranforms[modelMesh.ParentBone.Index];
                     effect.EnableDefaultLighting();
                     effect.SpecularColor = new Vector3(0.25f);
                     effect.SpecularPower = 16;
                 }
                 modelMesh.Draw();
             }
-
-            base.Draw(gameTime);
         }
+
+        private void DrawMainModel(Matrix world, Matrix view, Matrix projection)
+        {
+            Matrix[] bones = animationPlayer.GetSkinTransforms();
+
+            foreach (ModelMesh modelMesh in mainModel.Meshes)
+            {
+                foreach (SkinnedEffect effect in modelMesh.Effects)
+                {
+                    effect.SetBoneTransforms(bones);
+                    effect.World = world;
+                    effect.View = view;
+                    effect.Projection = projection;
+
+                    effect.EnableDefaultLighting();
+                    effect.SpecularColor = new Vector3(0.25f);
+
+                    effect.SpecularPower = 16;
+                }
+                modelMesh.Draw();
+            }
+        }
+
 
         public float deltaMediaPlayerVolume { get; set; }
     }
