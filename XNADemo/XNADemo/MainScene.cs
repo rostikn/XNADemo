@@ -11,6 +11,7 @@ using Microsoft.Xna.Framework.Media;
 using System.IO;
 using SkinnedModel;
 using XNADemo.Models;
+using XNADemo.Models.FontModels;
 
 namespace XNADemo
 {
@@ -21,6 +22,7 @@ namespace XNADemo
     {
         // XNA objects
         GraphicsDeviceManager graphics;
+        SpriteBatch foregroundTextSpriteBatch;
 
         // DateTime objects
         DateTime previousUpdateTime;
@@ -80,6 +82,11 @@ namespace XNADemo
         Point mainModelPosition = new Point(defaultMainModelPositionX, defaultMainModelPositionY);
         int mainModelAngle = defaultMainModelAngle;
 
+        // Fonts
+        const string defaultFontsFolderName = "Fonts";
+        const string verdanaFontName = "Verdana";
+        FontModelBase verdanaFontModel;
+
         public MainScene()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -96,11 +103,21 @@ namespace XNADemo
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            skyBoxModel = new SkyBoxModel(this.Content, meshFolderName, skyBoxModelFolderName, skyBoxModelName);
-            landscapeModel = new LandscapeModel(this.Content, meshFolderName, landscapeModelFolderName, landscapeModelName);
+
+            foregroundTextSpriteBatch = new SpriteBatch(GraphicsDevice);
+
+            InitializeModels();
 
             base.Initialize();
         }
+
+        private void InitializeModels()
+        {
+            skyBoxModel = new SkyBoxModel(this.Content, meshFolderName, skyBoxModelFolderName, skyBoxModelName);
+            landscapeModel = new LandscapeModel(this.Content, meshFolderName, landscapeModelFolderName, landscapeModelName);
+            verdanaFontModel = new FontModelBase(this.Content, defaultFontsFolderName, verdanaFontName);
+        }
+
 
         /// <summary>
         /// LoadContent will be called once per game and is the place to load
@@ -111,13 +128,19 @@ namespace XNADemo
             // TODO: use this.Content to load your game content here
             LoadMainTheme();
 
-            InitializeModels();
+            LoadModels();
 
             InitializeAnimationPlayer();
             InitializeMediaPlayer();
         }
 
-        private void InitializeModels()
+        private void LoadModels()
+        {
+            Load3DModels();
+            LoadFontModels();
+        }
+
+        private void Load3DModels()
         {
             LoadMainModel();
             InitializeMainModelSkinningData();
@@ -125,7 +148,11 @@ namespace XNADemo
 
             LoadLandscapeModel();
             LoadSkyBoxModel();
-            //InitializeLandscapeModelSkinningData();
+        }
+
+        private void LoadFontModels()
+        {
+            LoadVerdanaFontModel();
         }
 
         private void LoadMainTheme()
@@ -172,7 +199,10 @@ namespace XNADemo
         {
             skyBoxModel.Load();
         }
-
+        private void LoadVerdanaFontModel()
+        {
+            verdanaFontModel.Load();
+        }
 
         private void InitializeAnimationPlayer()
         {
@@ -317,8 +347,8 @@ namespace XNADemo
 
         private void HandleMainModelPositionXLimits()
         {
-            const int maxMainModelXPosition = 500;
-            const int minMainModelXPosition = -500;
+            const int maxMainModelXPosition = 350;
+            const int minMainModelXPosition = -350;
 
             if (mainModelPosition.X > maxMainModelXPosition)
             {
@@ -332,8 +362,8 @@ namespace XNADemo
 
         private void HandleMainModelPositionYLimits()
         {
-            const int maxMainModelYPosition = 500;
-            const int minMainModelYPosition = -500;
+            const int maxMainModelYPosition = 350;
+            const int minMainModelYPosition = -350;
             if (mainModelPosition.Y > maxMainModelYPosition)
             {
                 mainModelPosition.Y = maxMainModelYPosition;
@@ -611,7 +641,8 @@ namespace XNADemo
         }
 
         #endregion
-
+        const string controlsDescription = "Camera controls: Up, Down, Left, Right, Z, W. Model controls: A, W, S. Volume controls: + / -";
+        const string manufacturerInfo = "Cybertone XNA 4.0 Demo (C)";
         /// <summary>
         /// This is called when the game should draw itself.
         /// </summary>
@@ -619,20 +650,49 @@ namespace XNADemo
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
+            
             Matrix mainModelTranslation = MainModelTranslation();
             Matrix view = CreateView();
             Matrix projection = CreateProjection();
 
             // TODO: Add your drawing code here
+            /*
+                double skyWorldX = cameraDistance * Math.Cos(MathHelper.ToRadians(cameraRotation));
+                const double skyWorldY = 0.0d;
+                double skyWorldZ = cameraDistance * Math.Sin(MathHelper.ToRadians(cameraRotation));
+             */
+
             double skyWorldX = cameraDistance * Math.Cos(MathHelper.ToRadians(cameraRotation));
             double skyWorldY = cameraDistance * Math.Sin(MathHelper.ToRadians(cameraRotation));
-            Matrix skyBoxWorld = Matrix.CreateTranslation((float)skyWorldY, (float)skyWorldX, 0);
+            const double skyWorldZ = 0.0d;
+            Matrix skyBoxWorld = Matrix.CreateTranslation((float)skyWorldY, (float)skyWorldX, (float)skyWorldZ);
 
             skyBoxModel.Draw(GraphicsDevice, skyBoxWorld, view, projection);
 
             landscapeModel.Draw(GraphicsDevice, view, projection);
 
             DrawMainModel(mainModelTranslation, view, projection);
+
+            foregroundTextSpriteBatch.Begin();
+
+            const float controlsDescriptionYPositionOffset = 50f;
+            float controlsDescriptionXPosition = foregroundTextSpriteBatch.GraphicsDevice.Viewport.Width / 2;
+            float controlsDescriptionYPosition = GraphicsDevice.Viewport.Height - controlsDescriptionYPositionOffset; 
+
+            verdanaFontModel.Draw(foregroundTextSpriteBatch, 
+                new Vector2(controlsDescriptionXPosition, controlsDescriptionYPosition),
+                0, controlsDescription, Color.Silver);
+            const float manufacturerInfoXOffset = -80f;
+            const float manufacturerInfoYOffset = 20f;
+            float manufacturerInfoXPosition = GraphicsDevice.Viewport.Width - 
+                verdanaFontModel.SpriteFont.MeasureString(manufacturerInfo).Length() - 
+                manufacturerInfoXOffset;
+            float manufacturerInfoYPosition = GraphicsDevice.Viewport.Height - manufacturerInfoYOffset;
+            verdanaFontModel.Draw(foregroundTextSpriteBatch,
+                new Vector2(manufacturerInfoXPosition, manufacturerInfoYPosition),
+                0, manufacturerInfo, Color.Red);
+
+            foregroundTextSpriteBatch.End();
 
             base.Draw(gameTime);
         }
@@ -675,7 +735,7 @@ namespace XNADemo
                     effect.EnableDefaultLighting();
                     effect.SpecularColor = new Vector3(0.25f);
 
-                    effect.SpecularPower = 16;
+                    effect.SpecularPower = 32;
                 }
                 modelMesh.Draw();
             }

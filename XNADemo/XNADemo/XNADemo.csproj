@@ -76,6 +76,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\DudeModel.cs" />
+    <Compile Include="Models\FontModels\FontModelBase.cs" />
     <Compile Include="Models\LandscapeModel.cs" />
     <Compile Include="Models\ModelBase.cs" />
     <Compile Include="Models\SkyBoxModel.cs" />
