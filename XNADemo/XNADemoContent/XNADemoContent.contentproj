@@ -33,13 +33,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Mesh\dude.fbx">
-      <Name>dude</Name>
-      <Importer>FbxImporter</Importer>
-      <Processor>SkinnedModelProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Audio\MainTheme.mp3">
       <Name>MainTheme</Name>
       <Importer>Mp3Importer</Importer>
@@ -47,8 +40,20 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Mesh\Level0.FBX">
+    <Compile Include="Mesh\Dude\dude.fbx">
+      <Name>dude</Name>
+      <Importer>FbxImporter</Importer>
+      <Processor>SkinnedModelProcessor</Processor>
+    </Compile>
+    <Compile Include="Mesh\Landscape\Level0.FBX">
       <Name>Level0</Name>
+      <Importer>FbxImporter</Importer>
+      <Processor>ModelProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Mesh\SkyBox\skybox.FBX">
+      <Name>skybox</Name>
       <Importer>FbxImporter</Importer>
       <Processor>ModelProcessor</Processor>
     </Compile>

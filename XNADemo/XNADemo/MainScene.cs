@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using System.IO;
 using SkinnedModel;
+using XNADemo.Models;
 
 namespace XNADemo
 {
@@ -40,7 +41,7 @@ namespace XNADemo
         // Camera constants
         const float defaultCameraArc = 0;
         const float defaultCameraRotation = -45;
-        const float defaultCameraDistance = 300;
+        const float defaultCameraDistance = 150;
 
         // Camera variables
         float cameraArc = defaultCameraArc;
@@ -58,15 +59,19 @@ namespace XNADemo
         Song mainTheme;
 
         // Models
+        const string mainModelFolderName = "Dude";
         const string mainModelName = "dude";
         Model mainModel;
         SkinningData mainModelSkinningData;
         Matrix[] mainModelBonesTransforms;
 
+        const string landscapeModelFolderName = "Landscape";
         const string landscapeModelName = "Level0";
-        Model landscapeModel;
-        SkinningData landscapeModelSkinningData;
-        Matrix[] landscapeModelBonesTransforms;
+        LandscapeModel landscapeModel;
+        // New Models
+        const string skyBoxModelFolderName = "SkyBox";
+        const string skyBoxModelName = "skybox";
+        SkyBoxModel skyBoxModel;
 
         // Models positions
         const int defaultMainModelAngle = 0;
@@ -91,6 +96,8 @@ namespace XNADemo
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
+            skyBoxModel = new SkyBoxModel(this.Content, meshFolderName, skyBoxModelFolderName, skyBoxModelName);
+            landscapeModel = new LandscapeModel(this.Content, meshFolderName, landscapeModelFolderName, landscapeModelName);
 
             base.Initialize();
         }
@@ -117,6 +124,7 @@ namespace XNADemo
             InitializeMainModelBonesTransforms();
 
             LoadLandscapeModel();
+            LoadSkyBoxModel();
             //InitializeLandscapeModelSkinningData();
         }
 
@@ -129,7 +137,7 @@ namespace XNADemo
         const string cantFindModelExceptionMessageTemplate = "Can't find a model by a specified path: {0}";
         private void LoadMainModel()
         {
-            string mainModelPath = Path.Combine(meshFolderName, mainModelName);
+            string mainModelPath = Path.Combine(meshFolderName, mainModelFolderName, mainModelName);
             mainModel = this.Content.Load<Model>(mainModelPath);
 
             if (mainModel == null)
@@ -157,29 +165,14 @@ namespace XNADemo
 
         private void LoadLandscapeModel()
         {
-            string landscapeModelPath = Path.Combine(meshFolderName, landscapeModelName);
-            landscapeModel = this.Content.Load<Model>(landscapeModelPath);
-            if (landscapeModel == null)
-            {
-                throw new IOException(
-                    string.Format(cantFindModelExceptionMessageTemplate, landscapeModelPath)
-                    );
-            }
+            landscapeModel.Load();
         }
 
-        private void InitializeLandscapeModelSkinningData()
+        private void LoadSkyBoxModel()
         {
-            landscapeModelSkinningData = landscapeModel.Tag as SkinningData;
-            if (landscapeModelSkinningData == null)
-            {
-                throw new InvalidOperationException(invalidSkinningDataExceptionMessageTemplate);
-            }
+            skyBoxModel.Load();
         }
 
-        private void InitializeLandscapeModelBonesTransfotms()
-        {
-            landscapeModelBonesTransforms = new Matrix[landscapeModelSkinningData.BindPose.Count];
-        }
 
         private void InitializeAnimationPlayer()
         {
@@ -225,6 +218,7 @@ namespace XNADemo
         }
 
         #region Input Handlers
+
         private void HandleInput(GameTime gameTime)
         {
             ProcessKeyboardStates();
@@ -243,14 +237,17 @@ namespace XNADemo
         }
 
         #region Process States
+
         private void ProcessKeyboardStates()
         {
             previousKeyboardState = currentKeyboardState;
             currentKeyboardState = Keyboard.GetState();
         }
+
         #endregion
 
         #region Handle Exit
+
         private void HandleExit()
         {
             if (currentKeyboardState.IsKeyDown(Keys.Escape))
@@ -258,7 +255,10 @@ namespace XNADemo
                 Exit();
             }
         }
+
         #endregion
+
+        #region Handel Main Model Position
 
         private void HandleMainModelPosition(GameTime gameTime)
         {
@@ -266,6 +266,7 @@ namespace XNADemo
             //HandleMainModelGoBack(gameTime);
             HandleMainModelRotateLeft(gameTime);
             HandleMainModelRotateRight(gameTime);
+            HandleMainModelPositionLimits();
         }
 
         private void HandleMainModelGoForward(GameTime gameTime)
@@ -304,11 +305,48 @@ namespace XNADemo
                 mainModelAngle--;
                 UpdateTransforms(gameTime);
             }
+        }
 
+        private void HandleMainModelPositionLimits()
+        {
+            HandleMainModelPositionXLimits();
+            HandleMainModelPositionYLimits();
+        }
+
+        private void HandleMainModelPositionXLimits()
+        {
+            const int maxMainModelXPosition = 500;
+            const int minMainModelXPosition = -500;
+
+            if (mainModelPosition.X > maxMainModelXPosition)
+            {
+                mainModelPosition.X = maxMainModelXPosition;
+            }
+            else if (mainModelPosition.X < minMainModelXPosition)
+            {
+                mainModelPosition.X = minMainModelXPosition;
+            }
+        }
+
+        private void HandleMainModelPositionYLimits()
+        {
+            const int maxMainModelYPosition = 500;
+            const int minMainModelYPosition = -500;
+            if (mainModelPosition.Y > maxMainModelYPosition)
+            {
+                mainModelPosition.Y = maxMainModelYPosition;
+            }
+            else if (mainModelPosition.Y < minMainModelYPosition)
+            {
+                mainModelPosition.Y = minMainModelYPosition;
+            }
 
         }
 
+        #endregion
+
         #region Handle Camera Up/Down
+
         private void HandleCameraArc(GameTime gameTime)
         {
             HandleCameraArcUp(gameTime);
@@ -342,17 +380,19 @@ namespace XNADemo
 
         private void HandleCameraArcLimits()
         {
-            const float cameraArcMaxLimit = 0f;
-            const float cameraArcMinLimit = -90.0f;
+            const float cameraArcMaxLimit = 0.0f;
+            const float cameraArcMinLimit = -10.0f;
 
             if (cameraArc > cameraArcMaxLimit)
                 cameraArc = cameraArcMaxLimit;
             else if (cameraArc < cameraArcMinLimit)
                 cameraArc = cameraArcMinLimit;
         }
+
         #endregion
 
         #region Handle Camera Rotation
+
         private void HandleCameraRotation(GameTime gameTime)
         {
             HandleCameraRotationLeft(gameTime);
@@ -382,9 +422,11 @@ namespace XNADemo
                 cameraRotation += time * deltaCameraRotation;
             }
         }
+
         #endregion
 
         #region Handle Camera Distance
+
         private void HandleCameraZoom(GameTime gameTime)
         {
             HandleCameraZoomIn(gameTime);
@@ -430,9 +472,11 @@ namespace XNADemo
                 cameraDistance = cameraDistanceMinLimit;
             }
         }
+
         #endregion
 
         #region Handle MediaPlayer
+
         private void HandleMediaPlayer(GameTime gameTime)
         {
             const int deltaTime = 100;
@@ -444,9 +488,11 @@ namespace XNADemo
                 previousUpdateTime = DateTime.Now;
             }
         }
+
         #endregion
 
         #region Handle MediaPlayer State
+
         private void HandleMediaPlayerState()
         {
             if (currentKeyboardState.IsKeyDown(Keys.Multiply) &&
@@ -466,9 +512,11 @@ namespace XNADemo
                 MediaPlayer.Pause();
             }
         }
+
         #endregion
 
         #region Hanlde Media Player Volume
+
         private void HandleMediaPlayerVolume()
         {
             HandleMediaPlayerVolumeIncrease();
@@ -511,6 +559,7 @@ namespace XNADemo
         #endregion
 
         #region Handle Reset
+
         private void HandleReset()
         {
             if (currentKeyboardState.IsKeyDown(Keys.R))
@@ -532,9 +581,12 @@ namespace XNADemo
             if (MediaPlayer.State == MediaState.Paused)
                 MediaPlayer.Resume();
         }
+
         #endregion
         
         #endregion
+
+        #region Updates
 
         private void UpdateTransforms(GameTime gameTime)
         {
@@ -551,6 +603,8 @@ namespace XNADemo
             MediaPlayer.Volume = mediaPlayerVolume;
         }
 
+        #endregion
+
         /// <summary>
         /// This is called when the game should draw itself.
         /// </summary>
@@ -563,7 +617,9 @@ namespace XNADemo
             Matrix projection = CreateProjection();
 
             // TODO: Add your drawing code here
-            DrawLandscape(view, projection);
+            skyBoxModel.Draw(GraphicsDevice, view, projection);
+
+            landscapeModel.Draw(GraphicsDevice, view, projection);
 
             DrawMainModel(mainModelTranslation, view, projection);
 
@@ -591,25 +647,6 @@ namespace XNADemo
                 MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 10000);
         }
 
-        private void DrawLandscape(Matrix view, Matrix projection)
-        {
-            Matrix[] landscapeTranforms = new Matrix[landscapeModel.Bones.Count];
-            landscapeModel.CopyAbsoluteBoneTransformsTo(landscapeTranforms);
-
-            foreach (ModelMesh modelMesh in landscapeModel.Meshes)
-            {
-                foreach (BasicEffect effect in modelMesh.Effects)
-                {
-                    effect.View = view;
-                    effect.Projection = projection;
-                    effect.World = landscapeTranforms[modelMesh.ParentBone.Index];
-                    effect.EnableDefaultLighting();
-                    effect.SpecularColor = new Vector3(0.25f);
-                    effect.SpecularPower = 16;
-                }
-                modelMesh.Draw();
-            }
-        }
 
         private void DrawMainModel(Matrix world, Matrix view, Matrix projection)
         {
