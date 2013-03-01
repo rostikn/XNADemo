@@ -212,7 +212,9 @@ namespace XNADemo
                 isFirstUpdateTRansformsCompleted = true;
             }
             HandleInput(gameTime);
+            UpdateSkyBox();
             UpdateMediaPlayer();
+            
             
             base.Update(gameTime);
         }
@@ -460,7 +462,7 @@ namespace XNADemo
 
         private void HandleCameraZoomLimits()
         {
-            const float cameraDistanceMaxLimit = 500.0f;
+            const float cameraDistanceMaxLimit = 750.0f;
             const float cameraDistanceMinLimit = 10.0f;
 
             if (cameraDistance > cameraDistanceMaxLimit)
@@ -598,6 +600,11 @@ namespace XNADemo
             animationPlayer.UpdateSkinTransforms();
         }
 
+        private void UpdateSkyBox()
+        {
+            //skyBoxModel.Model.Meshes
+        }
+
         private void UpdateMediaPlayer()
         {
             MediaPlayer.Volume = mediaPlayerVolume;
@@ -617,7 +624,11 @@ namespace XNADemo
             Matrix projection = CreateProjection();
 
             // TODO: Add your drawing code here
-            skyBoxModel.Draw(GraphicsDevice, view, projection);
+            double skyWorldX = cameraDistance * Math.Cos(MathHelper.ToRadians(cameraRotation));
+            double skyWorldY = cameraDistance * Math.Sin(MathHelper.ToRadians(cameraRotation));
+            Matrix skyBoxWorld = Matrix.CreateTranslation((float)skyWorldY, (float)skyWorldX, 0);
+
+            skyBoxModel.Draw(GraphicsDevice, skyBoxWorld, view, projection);
 
             landscapeModel.Draw(GraphicsDevice, view, projection);
 
@@ -644,7 +655,7 @@ namespace XNADemo
         private Matrix CreateProjection()
         {
             return Matrix.CreatePerspectiveFieldOfView(
-                MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 10000);
+                MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 2, 10000);
         }
 
 
