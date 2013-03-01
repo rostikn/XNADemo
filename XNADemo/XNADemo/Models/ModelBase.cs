@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework;
 using System.IO;
 using Microsoft.Xna.Framework.Content;
 
-namespace XNADemo.Models
+namespace Cybertone.XNA40Demo.Models
 {
     internal class ModelBase
     {

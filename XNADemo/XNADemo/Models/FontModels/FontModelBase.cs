@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework.Content;
 using System.IO;
 using Microsoft.Xna.Framework;
 
-namespace XNADemo.Models.FontModels
+namespace Cybertone.XNA40Demo.Models.FontModels
 {
     internal class FontModelBase
     {

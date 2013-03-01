@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual C# Express 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XNADemo", "XNADemo\XNADemo\XNADemo.csproj", "{19A77A5A-58BF-4609-94A3-FF35B80252C5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cybertone.XNA40Demo", "XNADemo\XNADemo\Cybertone.XNA40Demo.csproj", "{19A77A5A-58BF-4609-94A3-FF35B80252C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XNADemoContent", "XNADemo\XNADemoContent\XNADemoContent.contentproj", "{3483188B-EE50-4444-B794-B485403EE5FD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cybertone.XNA40Demo.Content", "XNADemo\XNADemoContent\Cybertone.XNA40Demo.Content.contentproj", "{3483188B-EE50-4444-B794-B485403EE5FD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

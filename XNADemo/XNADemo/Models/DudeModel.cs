@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.Xna.Framework.Content;
 
-namespace XNADemo.Models
+namespace Cybertone.XNA40Demo.Models
 {
     internal class DudeModel : ModelBase
     {

@@ -10,10 +10,11 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using System.IO;
 using SkinnedModel;
-using XNADemo.Models;
-using XNADemo.Models.FontModels;
+using Cybertone.XNA40Demo.Models;
+using Cybertone.XNA40Demo.Models.FontModels;
+using System.Reflection;
 
-namespace XNADemo
+namespace Cybertone.XNA40Demo
 {
     /// <summary>
     /// This is the main type for your game
@@ -23,6 +24,7 @@ namespace XNADemo
         // XNA objects
         GraphicsDeviceManager graphics;
         SpriteBatch foregroundTextSpriteBatch;
+        string version;
 
         // DateTime objects
         DateTime previousUpdateTime;
@@ -89,6 +91,7 @@ namespace XNADemo
 
         public MainScene()
         {
+            version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = contentFolderName;
         }
@@ -493,7 +496,7 @@ namespace XNADemo
         private void HandleCameraZoomLimits()
         {
             const float cameraDistanceMaxLimit = 750.0f;
-            const float cameraDistanceMinLimit = 10.0f;
+            const float cameraDistanceMinLimit = 40.0f;
 
             if (cameraDistance > cameraDistanceMaxLimit)
             {
@@ -641,8 +644,6 @@ namespace XNADemo
         }
 
         #endregion
-        const string controlsDescription = "Camera controls: Up, Down, Left, Right, Z, W. Model controls: A, W, S. Volume controls: + / -";
-        const string manufacturerInfo = "Cybertone XNA 4.0 Demo (C)";
         /// <summary>
         /// This is called when the game should draw itself.
         /// </summary>
@@ -655,42 +656,14 @@ namespace XNADemo
             Matrix view = CreateView();
             Matrix projection = CreateProjection();
 
-            // TODO: Add your drawing code here
-            /*
-                double skyWorldX = cameraDistance * Math.Cos(MathHelper.ToRadians(cameraRotation));
-                const double skyWorldY = 0.0d;
-                double skyWorldZ = cameraDistance * Math.Sin(MathHelper.ToRadians(cameraRotation));
-             */
-
-            double skyWorldX = cameraDistance * Math.Cos(MathHelper.ToRadians(cameraRotation));
-            double skyWorldY = cameraDistance * Math.Sin(MathHelper.ToRadians(cameraRotation));
-            const double skyWorldZ = 0.0d;
-            Matrix skyBoxWorld = Matrix.CreateTranslation((float)skyWorldY, (float)skyWorldX, (float)skyWorldZ);
-
-            skyBoxModel.Draw(GraphicsDevice, skyBoxWorld, view, projection);
-
-            landscapeModel.Draw(GraphicsDevice, view, projection);
-
+            DrawSkyBoxModel(view, projection);
+            DrawLanscapeModel(view, projection);
             DrawMainModel(mainModelTranslation, view, projection);
 
             foregroundTextSpriteBatch.Begin();
 
-            const float controlsDescriptionYPositionOffset = 50f;
-            float controlsDescriptionXPosition = foregroundTextSpriteBatch.GraphicsDevice.Viewport.Width / 2;
-            float controlsDescriptionYPosition = GraphicsDevice.Viewport.Height - controlsDescriptionYPositionOffset; 
-
-            verdanaFontModel.Draw(foregroundTextSpriteBatch, 
-                new Vector2(controlsDescriptionXPosition, controlsDescriptionYPosition),
-                0, controlsDescription, Color.Silver);
-            const float manufacturerInfoXOffset = -80f;
-            const float manufacturerInfoYOffset = 20f;
-            float manufacturerInfoXPosition = GraphicsDevice.Viewport.Width - 
-                verdanaFontModel.SpriteFont.MeasureString(manufacturerInfo).Length() - 
-                manufacturerInfoXOffset;
-            float manufacturerInfoYPosition = GraphicsDevice.Viewport.Height - manufacturerInfoYOffset;
-            verdanaFontModel.Draw(foregroundTextSpriteBatch,
-                new Vector2(manufacturerInfoXPosition, manufacturerInfoYPosition),
-                0, manufacturerInfo, Color.Red);
+            DrawControlsDescriptionText(foregroundTextSpriteBatch);
+            DrawManufacurerInfoText(foregroundTextSpriteBatch);
 
             foregroundTextSpriteBatch.End();
 
@@ -718,7 +691,24 @@ namespace XNADemo
                 MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 2, 10000);
         }
 
+        private void DrawSkyBoxModel(Matrix view, Matrix projection)
+        {
+            /*
+            double skyWorldX = cameraDistance * Math.Cos(MathHelper.ToRadians(cameraRotation));
+            const double skyWorldY = 0.0d;
+            double skyWorldZ = cameraDistance * Math.Sin(MathHelper.ToRadians(cameraRotation));
+            */
+            double skyWorldX = cameraDistance * Math.Cos(MathHelper.ToRadians(cameraRotation));
+            double skyWorldY = cameraDistance * Math.Sin(MathHelper.ToRadians(cameraRotation));
+            const double skyWorldZ = 0.0d;
+            Matrix skyBoxWorld = Matrix.CreateTranslation((float)skyWorldY, (float)skyWorldX, (float)skyWorldZ);
 
+            skyBoxModel.Draw(GraphicsDevice, skyBoxWorld, view, projection);
+        }
+        private void DrawLanscapeModel(Matrix view, Matrix projection)
+        {
+            landscapeModel.Draw(GraphicsDevice, view, projection);
+        }
         private void DrawMainModel(Matrix world, Matrix view, Matrix projection)
         {
             Matrix[] bones = animationPlayer.GetSkinTransforms();
@@ -741,6 +731,34 @@ namespace XNADemo
             }
         }
 
+        private void DrawControlsDescriptionText(SpriteBatch spriteBatch)
+        {
+            const string controlsDescription = "Camera controls: Up, Down, Left, Right, Z, W. Model controls: A, W, S. Volume controls: + / -";
+            const float controlsDescriptionYPositionOffset = 50f;
+
+            float controlsDescriptionXPosition = spriteBatch.GraphicsDevice.Viewport.Width / 2;
+            float controlsDescriptionYPosition = GraphicsDevice.Viewport.Height - controlsDescriptionYPositionOffset;
+
+            verdanaFontModel.Draw(spriteBatch, 
+                new Vector2(controlsDescriptionXPosition, controlsDescriptionYPosition),
+                0, controlsDescription, Color.Silver);
+        }
+
+        private void DrawManufacurerInfoText(SpriteBatch spriteBatch)
+        {
+            const string manufacturerInfoTemplate = "Cybertone XNA 4.0 Demo v{0}";
+            const float manufacturerInfoXOffset = -115f;
+            const float manufacturerInfoYOffset = 20f;
+
+            string manufacturerInfo = string.Format(manufacturerInfoTemplate, version);
+            float manufacturerInfoXPosition = GraphicsDevice.Viewport.Width -
+                verdanaFontModel.SpriteFont.MeasureString(manufacturerInfo).Length() -
+                manufacturerInfoXOffset;
+            float manufacturerInfoYPosition = GraphicsDevice.Viewport.Height - manufacturerInfoYOffset;
+            verdanaFontModel.Draw(spriteBatch,
+                new Vector2(manufacturerInfoXPosition, manufacturerInfoYPosition),
+                0, manufacturerInfo, Color.Red);
+        }
 
         public float deltaMediaPlayerVolume { get; set; }
     }

@@ -5,10 +5,10 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("XNADemo")]
-[assembly: AssemblyProduct("XNADemo")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyTitle("Cbertone.XNA 4.0 Demo")]
+[assembly: AssemblyProduct("XNA 4.0 Demo")]
+[assembly: AssemblyDescription("Cbertone.XNA 4.0 Demo")]
+[assembly: AssemblyCompany("Cybertone")]
 [assembly: AssemblyCopyright("Copyright ©  2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -31,4 +31,4 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyVersion("0.2.3.0")]

@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework;
 
-namespace XNADemo.Models
+namespace Cybertone.XNA40Demo.Models
 {
     internal class SkyBoxModel : ModelBase
     {
